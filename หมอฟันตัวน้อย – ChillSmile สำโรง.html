@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>หมอฟันตัวน้อย – ChillSmile สำโรง</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&display=swap">
+<style>
+:root{--bg:#ffe9f1;--ink:#5b2a4a;--card:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a1a2e;--ink:#ffe3f0;--card:#3d2a44}}
+:root[data-theme="dark"]{--bg:#2a1a2e;--ink:#ffe3f0;--card:#3d2a44}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:Itim,"Noto Sans Thai",Tahoma,sans-serif;display:flex;justify-content:center;-webkit-user-select:none;user-select:none}
+#app{width:100%;max-width:440px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+#hud{display:flex;justify-content:space-between;align-items:center;font-size:20px}
+#face{font-size:30px}
+#bar{height:16px;border-radius:99px;background:rgba(255,111,163,.25);overflow:hidden}
+#fill{display:block;height:100%;width:0;background:linear-gradient(90deg,#4cc3d9,#ff6fa3);border-radius:99px;transition:width .2s}
+#wrap{position:relative}
+canvas{width:100%;height:auto;display:block;border-radius:26px;touch-action:none;box-shadow:0 6px 0 #4cc3d9}
+#ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,240,247,.5);border-radius:26px}
+#ov.on{display:flex}
+.card{background:var(--card);color:var(--ink);border-radius:26px;padding:18px 22px;text-align:center;box-shadow:0 5px 0 #ff6fa3;max-width:86%;font-size:18px;line-height:1.35}
+.card h1,.card h2{margin:4px 0;font-size:30px}.card p{margin:6px 0}
+.big{font-size:56px}.stars{font-size:34px}.sm{font-size:15px;opacity:.8}
+.brand{display:inline-block;margin:6px 0;padding:6px 16px;border-radius:99px;background:#4cc3d9;color:#fff;font-size:24px}
+button{font:inherit;font-size:22px;background:#ff6fa3;color:#fff;border:0;border-radius:99px;padding:10px 28px;margin-top:8px;box-shadow:0 4px 0 #d94a82;cursor:pointer}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #d94a82}
+#hint{margin:0;text-align:center;font-size:16px;min-height:42px}
+</style></head><body>
+<div id="app">
+<div id="hud"><span id="stage"></span><span id="face">😬</span></div>
+<div id="bar"><i id="fill"></i></div>
+<div id="wrap"><canvas id="c" width="400" height="560"></canvas><div id="ov"></div></div>
+<p id="hint"></p>
+</div>
+<script>
+const C=document.getElementById('c'),x=C.getContext('2d'),W=400,H=560,ov=document.getElementById('ov'),fill=document.getElementById('fill'),face=document.getElementById('face');
+const mk=(w,h)=>{const e=document.createElement('canvas');e.width=w;e.height=h;return e};
+const pl=mk(W,H),hz=mk(W,H),sm=mk(100,140),pc=pl.getContext('2d'),hc=hz.getContext('2d'),sc=sm.getContext('2d',{willReadFrequently:true});
+const rr=t=>t.u?[10,10,24,24]:[24,24,10,10];
+const T=[];for(let i=0;i<6;i++){T.push({x:34+i*56,y:215,w:52,h:88,u:1});T.push({x:34+i*56,y:313,w:52,h:88,u:0})}
+const TP=new Path2D();T.forEach(t=>TP.roundRect(t.x,t.y,t.w,t.h,rr(t)));
+let s=7;const R=()=>(s=(s*16807)%2147483647)/2147483647;
+let st='start',L=pl,tot=1,prog=0,paste=0,px=200,py=330,down=0,lx=0,ly=0,t0=0,tk=0,tickT=0,parts=[],glow=-1,spin=0,AC;
+function sfx(f,d,ty='sine',v=.1){try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(n+d)}catch(e){}}
+function initPl(){pc.clearRect(0,0,W,H);pc.save();pc.clip(TP);pc.fillStyle='rgba(222,184,92,.5)';pc.fillRect(0,0,W,H);
+T.forEach(t=>{const gy=t.u?t.y:t.y+t.h,d=t.u?1:-1;for(let k=0;k<9;k++){const bx=t.x+6+R()*(t.w-12),by=gy+d*R()*44,r=7+R()*11,g=pc.createRadialGradient(bx,by,1,bx,by,r);g.addColorStop(0,'rgba(120,84,32,.97)');g.addColorStop(1,'rgba(176,132,56,.9)');pc.fillStyle=g;pc.beginPath();pc.arc(bx,by,r,0,7);pc.fill()}});pc.restore()}
+function initHz(){hc.clearRect(0,0,W,H);hc.save();hc.clip(TP);hc.fillStyle='rgba(205,196,170,.62)';hc.fillRect(0,0,W,H);
+for(let i=0;i<110;i++){hc.fillStyle='rgba(150,118,70,.55)';hc.beginPath();hc.arc(34+R()*332,215+R()*186,1.5+R()*3,0,7);hc.fill()}hc.restore()}
+function cnt(l){sc.clearRect(0,0,100,140);sc.drawImage(l,0,0,100,140);const d=sc.getImageData(0,0,100,140).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>40)n++;return n}
+function say(h,ms,cb){ov.innerHTML='<div class="card">'+h+'</div>';ov.className='on';if(ms)setTimeout(()=>{ov.className='';cb&&cb()},ms)}
+function menu(){say('<div class="big">🦷✨</div><h1>หมอฟันตัวน้อย</h1><div class="brand">ChillSmile สำโรง</div><p>ขูดหินปูน แล้วขัดฟันให้คนไข้<br>ลากนิ้วเพื่อเล่น!</p><button onclick="go()">เริ่มทำฟัน!</button>')}
+function go(){ov.className='';sfx(660,.12);st='scale';L=pl;initPl();hc.clearRect(0,0,W,H);tot=cnt(pl);prog=0;t0=performance.now();parts=[];glow=-1;ui()}
+function ui(){document.getElementById('stage').textContent=st!='polish'?'ด่าน 1 · ขูดหินปูน':'ด่าน 2 · ขัดฟันพิวมิส';
+document.getElementById('hint').textContent=st!='polish'?'🪥 ลากนิ้วถูบนฟันเพื่อขูดหินปูน (ต้องถูหลายรอบนะ!)':'🥣 แตะถ้วยพิวมิสมุมขวาล่างเพื่อตักผง แล้วลากขัดฟัน ผงหมดต้องแตะตักใหม่';
+fill.style.width='0%';face.textContent='😬'}
+function boom(){for(let i=0;i<46;i++)parts.push({x:200,y:300,vx:(Math.random()-.5)*9,vy:-Math.random()*7,l:50,m:50,r:3+Math.random()*5,c:['#ffd23f','#ff6fa3','#4cc3d9','#fff'][i%4],star:1})}
+function endScale(){st='wait';pc.clearRect(0,0,W,H);sfx(880,.25);boom();fill.style.width='100%';face.textContent='😁';
+say('<b>✨ หินปูนหมดเกลี้ยง!</b><br>ต่อไป…ขัดฟันด้วยผงพิวมิส',2000,()=>{st='polish';L=hz;initHz();tot=cnt(hz);prog=0;paste=0;ui()})}
+function endPolish(){st='wait';hc.clearRect(0,0,W,H);sfx(1040,.3);glow=0;boom();fill.style.width='100%';face.textContent='🤩';
+setTimeout(()=>{st='done';const t=(performance.now()-t0)/1000,n=t<70?3:t<120?2:1;
+say('<div class="big">🏆</div><h2>ใบประกาศหมอฟันตัวน้อย</h2><div class="stars">'+'⭐'.repeat(n)+'☆'.repeat(3-n)+'</div><p>ขูดหินปูน + ขัดฟัน สำเร็จใน '+(t|0)+' วินาที</p><div class="brand">🦷 ChillSmile สำโรง</div><p class="sm">แคปหน้าจอนี้ไปโพสต์ได้เลย 📸</p><button onclick="go()">เล่นอีกครั้ง</button>')},2300)}
+function work(x1,y1,x2,y2){const sc1=st=='scale',c=sc1?pc:hc,r=sc1?20:26,a=sc1?.13:.14,d=Math.hypot(x2-x1,y2-y1),n=Math.max(1,d/6|0);
+if(!sc1){if(paste<=0)return;paste=Math.max(0,paste-d*.0011)}
+c.save();c.globalCompositeOperation='destination-out';c.fillStyle='rgba(0,0,0,'+a+')';
+for(let i=1;i<=n;i++){c.beginPath();c.arc(x1+(x2-x1)*i/n,y1+(y2-y1)*i/n,r,0,7);c.fill()}c.restore();
+if(Math.random()<.6)parts.push({x:x2,y:y2,vx:(Math.random()-.5)*3,vy:-Math.random()*2.5,l:28,m:28,r:2+Math.random()*3,c:sc1?'#b88a3b':'#fff'});
+tickT+=d;if(tickT>70){tickT=0;sfx(sc1?1500+Math.random()*400:500,.04,'square',.03)}}
+const P=e=>{const r=C.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]};
+C.onpointerdown=e=>{if(st!='scale'&&st!='polish')return;[px,py]=P(e);C.setPointerCapture(e.pointerId);
+if(st=='polish'&&px>280&&py>450){paste=1;sfx(700,.14,'sine',.08);for(let i=0;i<10;i++)parts.push({x:330,y:480,vx:(Math.random()-.5)*5,vy:-Math.random()*4,l:24,m:24,r:3,c:'#fff'});return}
+down=1;lx=px;ly=py};
+C.onpointermove=e=>{[px,py]=P(e);if(down){work(lx,ly,px,py);lx=px;ly=py}};
+C.onpointerup=C.onpointercancel=()=>{down=0};
+function star(cx,cy,r){x.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,q=i%2?r*.45:r;x.lineTo(cx+Math.cos(a)*q,cy+Math.sin(a)*q)}x.closePath();x.fill()}
+function eyes(){const h=st=='wait'||st=='done';x.fillStyle='rgba(255,111,163,.45)';[[100,132],[300,132]].forEach(p=>{x.beginPath();x.arc(p[0],p[1],14,0,7);x.fill()});
+[140,260].forEach(ex=>{if(h){x.strokeStyle='#5b2a4a';x.lineWidth=5;x.lineCap='round';x.beginPath();x.arc(ex,122,13,Math.PI*1.1,Math.PI*1.9);x.stroke()}
+else{x.fillStyle='#fff';x.beginPath();x.arc(ex,118,16,0,7);x.fill();x.fillStyle='#3b2a4a';x.beginPath();x.arc(ex+(px-200)/40,118+(py-330)/70,8,0,7);x.fill();x.fillStyle='#fff';x.beginPath();x.arc(ex+(px-200)/40-3,115+(py-330)/70,2.5,0,7);x.fill()}})}
+function tool(){x.save();x.lineCap='round';
+if(st=='scale'){x.strokeStyle='#cfd8e0';x.lineWidth=6;x.beginPath();x.moveTo(px,py);x.lineTo(px+36,py+52);x.stroke();x.lineWidth=4;x.beginPath();x.arc(px+3,py+7,7,3.3,5.3);x.stroke();
+x.strokeStyle='#4cc3d9';x.lineWidth=20;x.beginPath();x.moveTo(px+36,py+52);x.lineTo(px+82,py+118);x.stroke()}
+else{x.strokeStyle='#7fd6c2';x.lineWidth=24;x.beginPath();x.moveTo(px+14,py+22);x.lineTo(px+74,py+120);x.stroke();x.strokeStyle='#4cc3d9';x.lineWidth=12;x.beginPath();x.moveTo(px+4,py+8);x.lineTo(px+22,py+36);x.stroke();
+x.fillStyle='#ff9ab5';x.beginPath();x.arc(px,py,20,0,7);x.fill();x.strokeStyle='#ff6fa3';x.lineWidth=3;for(let i=0;i<4;i++){const a=spin+i*Math.PI/2;x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*18,py+Math.sin(a)*18);x.stroke()}
+if(paste>0){x.fillStyle='rgba(255,255,255,.92)';x.beginPath();x.arc(px,py,12,0,7);x.fill()}}x.restore()}
+function jar(){const k=paste<=0?1+Math.sin(spin)*.06:1;x.save();x.translate(330,495);x.scale(k,k);x.fillStyle='#fff';x.strokeStyle='#4cc3d9';x.lineWidth=5;x.beginPath();x.roundRect(-46,-34,92,68,18);x.fill();x.stroke();
+x.fillStyle='#e8f8fb';x.beginPath();x.ellipse(0,-34,40,10,0,0,7);x.fill();x.stroke();x.fillStyle='#2a9db5';x.font='20px Itim,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('พิวมิส',0,4);x.restore();
+x.fillStyle='rgba(76,195,217,.3)';x.fillRect(284,540,92,8);x.fillStyle='#ff6fa3';x.fillRect(284,540,92*paste,8);
+if(paste<=0){x.fillStyle='#ff6fa3';x.font='18px Itim,sans-serif';x.textAlign='center';x.fillText('แตะตักผง!',330,452)}}
+function draw(){x.clearRect(0,0,W,H);const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#bfe9ff');g.addColorStop(1,'#ffe0ee');x.fillStyle=g;x.fillRect(0,0,W,H);
+x.fillStyle='rgba(255,255,255,.6)';[[40,110,14],[365,100,10],[350,200,7],[30,470,9]].forEach(b=>{x.beginPath();x.arc(b[0],b[1],b[2],0,7);x.fill()});
+x.fillStyle='#fff';x.strokeStyle='#4cc3d9';x.lineWidth=5;x.beginPath();x.roundRect(50,16,300,62,24);x.fill();x.stroke();
+x.fillStyle='#2a9db5';x.font='700 27px Itim,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🦷 ChillSmile สำโรง',200,48);
+eyes();
+x.fillStyle='#ff8fa8';x.beginPath();x.roundRect(10,148,380,332,100);x.fill();
+x.fillStyle='#7a2a4a';x.beginPath();x.roundRect(24,165,352,290,70);x.fill();
+x.save();x.beginPath();x.roundRect(24,165,352,290,70);x.clip();x.fillStyle='#ff6f91';x.fillRect(0,165,W,67);x.fillRect(0,382,W,80);
+x.fillStyle='#ff9ab5';x.beginPath();x.ellipse(200,452,80,34,0,0,7);x.fill();x.restore();
+T.forEach(t=>{x.beginPath();x.roundRect(t.x,t.y,t.w,t.h,rr(t));x.fillStyle='#fffef9';x.fill();x.strokeStyle='#e4d9cc';x.lineWidth=2;x.stroke();
+x.strokeStyle='rgba(150,210,255,.7)';x.lineWidth=4;x.lineCap='round';x.beginPath();x.moveTo(t.x+12,t.y+(t.u?34:16));x.lineTo(t.x+12,t.y+(t.u?64:46));x.stroke()});
+x.drawImage(hz,0,0);x.drawImage(pl,0,0);
+if(glow>=0){glow+=.025;const gx=-60+glow*560;x.save();x.clip(TP);x.fillStyle='rgba(255,255,255,.85)';x.beginPath();x.moveTo(gx,150);x.lineTo(gx+44,150);x.lineTo(gx-20,470);x.lineTo(gx-64,470);x.fill();x.restore()}
+parts.forEach(p=>{x.globalAlpha=Math.max(0,p.l/p.m);x.fillStyle=p.c;if(p.star)star(p.x,p.y,p.r*2);else{x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}});x.globalAlpha=1;
+if(st=='polish')jar();
+if(st=='scale'||st=='polish')tool();
+x.fillStyle='rgba(224,80,138,.9)';x.font='700 17px Itim,sans-serif';x.textAlign='left';x.fillText('🦷 ChillSmile สำโรง',14,538)}
+function loop(){spin+=.5;
+if(st=='scale'||st=='polish'){if(++tk%8==0){prog=Math.min(1,1-cnt(L)/tot);fill.style.width=prog*100+'%';face.textContent=prog<.3?'😬':prog<.7?'😮':'😁';if(prog>.93)(st=='scale'?endScale:endPolish)()}}
+parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.l--});parts=parts.filter(p=>p.l>0);
+draw();requestAnimationFrame(loop)}
+initPl();ui();menu();requestAnimationFrame(loop);
+</script></body></html>
